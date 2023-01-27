@@ -40,20 +40,22 @@ export class MailerService implements OnModuleInit {
     options: Options,
     purpose: MailPurpose,
     variables?: ReadonlyMap<string, string>,
-  ): Promise<void> {
-    return this.nodemailer.sendMail(
-      {
-        to: options.to,
-        subject: options.subject,
-        html: this.getMailTemplate(purpose, variables),
-      },
-      (err) => {
-        if (err) {
-          console.log(err);
-        } else {
-          console.log(`Successfully sent email to ${options.to}`);
-        }
-      },
+  ) {
+    return new Promise((resolve, reject) =>
+      this.nodemailer.sendMail(
+        {
+          to: options.to,
+          subject: options.subject,
+          html: this.getMailTemplate(purpose, variables),
+        },
+        (error: any, info: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(info.response.split(' ')[2]);
+          }
+        },
+      ),
     );
   }
 

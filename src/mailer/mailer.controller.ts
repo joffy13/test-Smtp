@@ -9,9 +9,10 @@ export class MailerController {
 
   @Post()
   async sendMail(@Body() options: Options) {
-    await this.mailer.sendMail(options, MailPurpose.SEND_MAIL);
+    const info = await this.mailer.sendMail(options, MailPurpose.SEND_MAIL);
     return {
       message: `Successfully sent email to ${options.to}`,
+      status: info,
     };
   }
 }
