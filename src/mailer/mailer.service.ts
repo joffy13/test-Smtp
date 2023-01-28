@@ -1,21 +1,22 @@
 import * as nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
-import { MailPurpose } from 'src/common/models/enums/mail-purpose.enum';
-import SMTPTransport, { Options } from 'nodemailer/lib/smtp-transport';
 import * as handlebars from 'handlebars';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as dotenv from 'dotenv';
+import { MailerInterface } from './mailer.interface';
+import { SendResultDto } from './dto/send-result.dto';
+import { MailPurpose } from 'src/common/models/enums/mail-purpose.enum';
 
 dotenv.config();
 
 @Injectable()
-export class MailerService implements OnModuleInit {
+export class MailerService implements MailerInterface, OnModuleInit {
   private nodemailer: nodemailer.Transporter;
 
   onModuleInit(): void {
     this.nodemailer = nodemailer.createTransport(
-      <SMTPTransport.Options>{
+      {
         host: process.env.MAILER_HOST,
         port: +process.env.MAILER_PORT,
         secure: +process.env.MAILER_PORT === 465, // true for 465, false for other ports
@@ -36,17 +37,13 @@ export class MailerService implements OnModuleInit {
     );
   }
 
-  public async sendMail(
-    options: Options,
-    purpose: MailPurpose,
-    variables?: ReadonlyMap<string, string>,
-  ) {
-    return new Promise((resolve, reject) =>
+  public async sendEmail(email: string): Promise<SendResultDto> {
+    const mail = await new Promise((resolve, reject) =>
       this.nodemailer.sendMail(
         {
-          to: options.to,
-          subject: options.subject,
-          html: this.getMailTemplate(purpose, variables),
+          to: email,
+          subject: 'send email',
+          html: this.getMailTemplate(MailPurpose.SEND_MAIL),
         },
         (error: any, info: any) => {
           if (error) {
@@ -57,15 +54,16 @@ export class MailerService implements OnModuleInit {
         },
       ),
     );
+    return {
+      email,
+      status: mail,
+    };
   }
 
-  private getMailTemplate(
-    purpose: MailPurpose,
-    variables?: ReadonlyMap<string, string>,
-  ): string {
+  private getMailTemplate(purpose: MailPurpose): string {
     const template = handlebars.compile(
       fs.readFileSync(path.resolve(__dirname, `mails/${purpose}.hbs`), 'utf8'),
     );
-    return template(variables);
+    return template(null);
   }
 }
